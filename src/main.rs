@@ -1,8 +1,8 @@
-mod flip;
 mod sim;
-use flip::Flip;
+mod vis;
+use vis::Visualization;
 mod util;
 fn main() {
-    let flip = Flip::new(125, 125);
-    flip.run();
+    let euler = Visualization::new(200, 200);
+    euler.run();
 }

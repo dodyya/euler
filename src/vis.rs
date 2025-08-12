@@ -21,8 +21,8 @@ pub struct Visualization {
     event_loop: EventLoop<()>,
 }
 
-const TIME_DETAILS: bool = true;
-const DETAILS_ON_CLICK: bool = false;
+const TIME_DETAILS: bool = false;
+const DETAILS_ON_RCLICK: bool = true;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ColorMode {
@@ -87,7 +87,7 @@ impl Visualization {
                 ));
                 if TIME_DETAILS {
                     println!(
-                        "Time for render: {}",
+                        "Render: {:.6}",
                         last_frame_start.elapsed().as_secs_f64() - step_time
                     );
                 }
@@ -113,11 +113,10 @@ impl Visualization {
             last_frame_start = Instant::now();
 
             self.sim.step();
-            // self.sim.step(frame_time.as_secs_f64() * 3.0);
 
             if TIME_DETAILS && ticker == 0 {
                 step_time = last_frame_start.elapsed().as_secs_f64();
-                println!("Time for simulation step: {}", step_time);
+                println!("Simulation: {:.5}", step_time);
             }
 
             match event {
@@ -131,7 +130,7 @@ impl Visualization {
                         if let Some(cursor_pos) = cursor_position {
                             let grid_x = (cursor_pos.0 / self.pixel_scale as f64) as i32;
                             let grid_y = (cursor_pos.1 / self.pixel_scale as f64) as i32;
-                            if DETAILS_ON_CLICK {
+                            if DETAILS_ON_RCLICK {
                                 self.sim.cell_info(grid_x as usize, grid_y as usize);
                             } else {
                                 mouse_down = true;
@@ -165,7 +164,7 @@ impl Visualization {
                             let cursor_pos = cursor_position.unwrap();
                             let grid_x = (cursor_pos.0 / self.pixel_scale as f64) as i32;
                             let grid_y = (cursor_pos.1 / self.pixel_scale as f64) as i32;
-                            self.sim.draw_filled_circle(grid_x, grid_y, 2.5);
+                            self.sim.draw_obstacle(grid_x, grid_y, 2.5);
                         }
                     }
                     WindowEvent::KeyboardInput { input, .. } => {

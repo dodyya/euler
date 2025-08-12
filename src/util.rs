@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::{
     fmt::{Debug, Display},
     ops::{Index, IndexMut},
@@ -99,5 +100,27 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)?;
         Ok(())
+    }
+}
+
+impl<T> Array2D<T>
+where
+    T: Display + Copy,
+{
+    pub(crate) fn fill_circle(&mut self, center_x: i32, center_y: i32, radius: f32, value: T) {
+        let r_squared = (radius * radius) as i32;
+
+        for y in (center_y - radius.ceil() as i32)..=(center_y + radius.ceil() as i32) {
+            for x in (center_x - radius.ceil() as i32)..=(center_x + radius.ceil() as i32) {
+                if x >= 0 && y >= 0 && x < self.width as i32 && y < self.height as i32 {
+                    let dx = x - center_x;
+                    let dy = y - center_y;
+
+                    if dx * dx + dy * dy <= r_squared {
+                        self[(x as usize, y as usize)] = value;
+                    }
+                }
+            }
+        }
     }
 }
