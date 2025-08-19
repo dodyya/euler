@@ -1,4 +1,4 @@
-use crate::sim::Simulation;
+use crate::sim::{EPSILON, Simulation};
 use hsv::{self, hsv_to_rgb};
 use pixels::{Pixels, SurfaceTexture};
 use std::cmp::min;
@@ -21,13 +21,11 @@ pub struct Visualization {
     event_loop: EventLoop<()>,
 }
 
-const TIME_DETAILS: bool = false;
-const DETAILS_ON_RCLICK: bool = true;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ColorMode {
-    Rgb,
+    Color,
     Grayscale,
+    Obstacle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +36,8 @@ enum VisualizationMode {
     SmokePressure,
     SmokeSpeed,
 }
+
+const RECORDING_INTERVAL: u8 = 2;
 
 impl Visualization {
     pub fn new(width: u32, height: u32) -> Self {
@@ -59,7 +59,7 @@ impl Visualization {
         let sim = Simulation::new(width as usize, height as usize);
 
         Visualization {
-            color_mode: ColorMode::Rgb,
+            color_mode: ColorMode::Color,
             vis_mode: VisualizationMode::SmokePressure,
             pixel_scale,
             window,
@@ -74,25 +74,21 @@ impl Visualization {
         let mut last_frame_start = Instant::now();
         let mut frame_time = Duration::ZERO;
         let mut ticker: u8 = 0;
-        let mut step_time: f64 = 0.0;
         let mut mouse_down = false;
+        let mut recording = false;
 
         self.event_loop.run(move |event, _, control_flow| {
-            if ticker == 0 {
+            control_flow.set_poll();
+            if ticker % 16 == 0 {
                 self.window.set_title(&format!(
-                    "Eulerian Fluid Simulation: {:?} mode - {:?} - FPS: {:.0}",
+                    "Eulerian Fluid Simulation: {} {:?} mode - {:?} - FPS: {:.0}",
+                    if recording { "(RECORDING)" } else { "" },
                     self.color_mode,
                     self.vis_mode,
                     1.0 / frame_time.as_secs_f64() as f64
                 ));
-                if TIME_DETAILS {
-                    println!(
-                        "Render: {:.6}",
-                        last_frame_start.elapsed().as_secs_f64() - step_time
-                    );
-                }
             }
-            ticker = ticker.wrapping_add(8);
+            ticker = ticker.wrapping_add(1);
 
             use ColorMode as cm;
             use VisualizationMode as vm;
@@ -109,36 +105,40 @@ impl Visualization {
 
             _ = self.pixels.render();
 
+            if recording && ticker % RECORDING_INTERVAL == 0 {
+                output_frame(
+                    self.window.inner_size().width / self.pixel_scale,
+                    self.window.inner_size().height / self.pixel_scale,
+                    self.pixels.frame(),
+                );
+            }
+
             frame_time = last_frame_start.elapsed();
             last_frame_start = Instant::now();
 
             self.sim.step();
 
-            if TIME_DETAILS && ticker == 0 {
-                step_time = last_frame_start.elapsed().as_secs_f64();
-                println!("Simulation: {:.5}", step_time);
+            if mouse_down {
+                let cursor_pos = cursor_position.unwrap();
+                let grid_x = (cursor_pos.0 / self.pixel_scale as f64) as i32;
+                let grid_y = (cursor_pos.1 / self.pixel_scale as f64) as i32;
+                self.sim.draw_obstacle(grid_x, grid_y, 2.5);
             }
 
-            match event {
-                Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    WindowEvent::MouseInput {
+            use WindowEvent as we;
+
+            if let Event::WindowEvent { event: wevent, .. } = event {
+                match wevent {
+                    we::CloseRequested => *control_flow = ControlFlow::Exit,
+                    we::MouseInput {
                         state: winit::event::ElementState::Pressed,
                         button: winit::event::MouseButton::Left,
                         ..
                     } => {
-                        if let Some(cursor_pos) = cursor_position {
-                            let grid_x = (cursor_pos.0 / self.pixel_scale as f64) as i32;
-                            let grid_y = (cursor_pos.1 / self.pixel_scale as f64) as i32;
-                            if DETAILS_ON_RCLICK {
-                                self.sim.cell_info(grid_x as usize, grid_y as usize);
-                            } else {
-                                mouse_down = true;
-                            }
-                        }
+                        mouse_down = true;
                     }
 
-                    WindowEvent::MouseInput {
+                    we::MouseInput {
                         state: winit::event::ElementState::Released,
                         button: winit::event::MouseButton::Left,
                         ..
@@ -146,7 +146,7 @@ impl Visualization {
                         mouse_down = false;
                     }
 
-                    WindowEvent::MouseInput {
+                    we::MouseInput {
                         state: winit::event::ElementState::Pressed,
                         button: winit::event::MouseButton::Right,
                         ..
@@ -158,16 +158,10 @@ impl Visualization {
                         }
                     }
 
-                    WindowEvent::CursorMoved { position, .. } => {
+                    we::CursorMoved { position, .. } => {
                         cursor_position = Some((position.x, position.y));
-                        if mouse_down {
-                            let cursor_pos = cursor_position.unwrap();
-                            let grid_x = (cursor_pos.0 / self.pixel_scale as f64) as i32;
-                            let grid_y = (cursor_pos.1 / self.pixel_scale as f64) as i32;
-                            self.sim.draw_obstacle(grid_x, grid_y, 2.5);
-                        }
                     }
-                    WindowEvent::KeyboardInput { input, .. } => {
+                    we::KeyboardInput { input, .. } => {
                         if input.state != ElementState::Pressed {
                             return;
                         }
@@ -177,8 +171,12 @@ impl Visualization {
                                     self.sim.reset_except_walls();
                                     ticker = 0;
                                 }
-                                VirtualKeyCode::R => {
+                                VirtualKeyCode::C => {
                                     self.sim.reset();
+                                    ticker = 0;
+                                }
+                                VirtualKeyCode::R => {
+                                    recording = !recording;
                                     ticker = 0;
                                 }
                                 VirtualKeyCode::Left => {
@@ -201,10 +199,19 @@ impl Visualization {
                                     };
                                     ticker = 0;
                                 }
-                                VirtualKeyCode::Up | VirtualKeyCode::Down => {
+                                VirtualKeyCode::Up => {
                                     self.color_mode = match self.color_mode {
-                                        cm::Rgb => cm::Grayscale,
-                                        cm::Grayscale => cm::Rgb,
+                                        cm::Color => cm::Grayscale,
+                                        cm::Grayscale => cm::Obstacle,
+                                        cm::Obstacle => cm::Color,
+                                    };
+                                    ticker = 0;
+                                }
+                                VirtualKeyCode::Down => {
+                                    self.color_mode = match self.color_mode {
+                                        cm::Grayscale => cm::Color,
+                                        cm::Obstacle => cm::Grayscale,
+                                        cm::Color => cm::Obstacle,
                                     };
                                     ticker = 0;
                                 }
@@ -213,17 +220,13 @@ impl Visualization {
                         }
                     }
                     _ => {}
-                },
-
-                _ => {}
+                }
             }
         });
     }
 }
 
 fn render(frame: &mut [u8], imag: &[f64], mask: &[f64], cm: ColorMode) {
-    //Go from [0.0, 1.0] to [0,255]; then assign that value to R, G, B and make A=255.
-    // dbg!(frame.len());
     let min = imag.iter().fold(f64::MAX, |acc, &x| acc.min(x));
     let max = imag.iter().fold(f64::MIN, |acc, &x| acc.max(x));
     let range = (max - min).max(0.000001);
@@ -232,20 +235,41 @@ fn render(frame: &mut [u8], imag: &[f64], mask: &[f64], cm: ColorMode) {
         .iter()
         .map(|x| (x - min) / (range))
         .zip(mask.iter())
-        .map(|(y, &m)| match cm {
-            ColorMode::Rgb => hsv_to_rgb(
-                (if y.is_nan() { 1.0 } else { y.clamp(0.0, 1.0) }) * 300.0,
+        .map(|(px, &m)| match cm {
+            ColorMode::Color => hsv_to_rgb(
+                (if px.is_nan() { 1.0 } else { px.clamp(0.0, 1.0) }) * 300.0,
                 range.clamp(0.5, 1.0),
                 m.clamp(0.0, 1.0),
             ),
             ColorMode::Grayscale => (
-                ((if y.is_nan() { 1.0 } else { y.clamp(0.0, 1.0) }) * m * 255.0) as u8,
-                ((if y.is_nan() { 1.0 } else { y.clamp(0.0, 1.0) }) * m * 255.0) as u8,
-                ((if y.is_nan() { 1.0 } else { y.clamp(0.0, 1.0) }) * m * 255.0) as u8,
+                ((if px.is_nan() { 1.0 } else { px.clamp(0.0, 1.0) }) * m * 255.0) as u8,
+                ((if px.is_nan() { 1.0 } else { px.clamp(0.0, 1.0) }) * m * 255.0) as u8,
+                ((if px.is_nan() { 1.0 } else { px.clamp(0.0, 1.0) }) * m * 255.0) as u8,
             ),
+            ColorMode::Obstacle => {
+                if m > EPSILON {
+                    hsv_to_rgb(
+                        (if px.is_nan() { 1.0 } else { px.clamp(0.0, 1.0) }) * 300.0,
+                        range.clamp(0.5, 1.0) * m,
+                        m.clamp(0.0, 1.0),
+                    )
+                } else {
+                    (255, 255, 255)
+                }
+            }
         })
         .map(|(r, g, b)| [r as u8, g as u8, b as u8, 255])
         .flatten()
         .collect();
     frame.copy_from_slice(&buffer);
+}
+
+fn output_frame(width: u32, height: u32, pixel_data: &[u8]) {
+    use std::io::{self, BufWriter, Write};
+
+    let mut output = BufWriter::new(io::stdout());
+    output.write_all(&width.to_be_bytes()).unwrap();
+    output.write_all(&height.to_be_bytes()).unwrap();
+    output.write_all(pixel_data).unwrap();
+    output.flush().unwrap();
 }

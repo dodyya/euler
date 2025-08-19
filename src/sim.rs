@@ -1,4 +1,5 @@
 use crate::util::Array2D;
+pub(crate) const EPSILON: f64 = 0.00000000001;
 use paste::paste;
 use std::cmp::min;
 #[derive(Debug)]
@@ -11,7 +12,7 @@ pub struct Simulation {
     p: Array2D<f64>,
     smoke: Array2D<f64>,
 }
-const DRAW_OBSTACLE: bool = true;
+const DRAW_OBSTACLE: bool = false;
 const WITH_GRAVITY: bool = false;
 
 const OVERRELAXATION_FACTOR: f64 = 1.94;
@@ -19,13 +20,13 @@ const NUM_PROJ_ITERATIONS: u32 = 100;
 const GRAVITY: f64 = 7.2;
 const DENSITY: f64 = 10.0;
 const WINDSPEED: f64 = 10.0;
-const BAND_WIDTH: usize = 10;
-const NUM_BANDS: usize = 1;
+const BAND_WIDTH: usize = 5;
+const NUM_BANDS: usize = 9;
 const DT: f64 = 0.22;
 const H: f64 = 0.4;
 
 const FLUID: f64 = 1.0;
-const SOLID: f64 = 0.0;
+const SOLID: f64 = -EPSILON;
 
 macro_rules! create_sample_method {
     ($field:ident,$dx:expr, $dy:expr ) => {
