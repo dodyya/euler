@@ -26,3 +26,6 @@ In propagating velocities by looking backwards instead of looking forwards, we m
 ## Sources/inspiration
 
 https://youtu.be/iKAVRgIrUOU?si=Oc8n5BHoWxqfJEbp
+
+
+<img src="https://github.com/user-attachments/assets/e7db800f-5a28-4644-9569-41bf7feaadbf" alt="wing demo" width="300"/>
