@@ -37,7 +37,8 @@ enum VisualizationMode {
     SmokeSpeed,
 }
 
-const RECORDING_INTERVAL: u8 = 2;
+const RECORDING_INTERVAL: u8 = 8;
+const DEBUG_MODE: bool = false;
 
 impl Visualization {
     pub fn new(width: u32, height: u32) -> Self {
@@ -105,7 +106,7 @@ impl Visualization {
 
             _ = self.pixels.render();
 
-            if recording && ticker % RECORDING_INTERVAL == 0 {
+            if recording && (ticker % RECORDING_INTERVAL) == 0 {
                 output_frame(
                     self.window.inner_size().width / self.pixel_scale,
                     self.window.inner_size().height / self.pixel_scale,
@@ -151,7 +152,9 @@ impl Visualization {
                         button: winit::event::MouseButton::Right,
                         ..
                     } => {
-                        if let Some(cursor_pos) = cursor_position {
+                        if let Some(cursor_pos) = cursor_position
+                            && DEBUG_MODE
+                        {
                             let grid_x = (cursor_pos.0 / self.pixel_scale as f64) as i32;
                             let grid_y = (cursor_pos.1 / self.pixel_scale as f64) as i32;
                             self.sim.cell_info(grid_x as usize, grid_y as usize);
