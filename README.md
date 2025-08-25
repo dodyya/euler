@@ -23,3 +23,4 @@ While this is more roundabout than the more straightforward solution of going th
 In propagating velocities by looking backwards instead of looking forwards, we make the assumption that the velocity field is continuous, and that the lookbehind distance is negligible relative to the cell size. Each step, we are implicitly assuming that the direction and amount of fluid flowing into a point in the field is the same as that of flowing out of the point, and since the points are not infinitely dense, this introduces some degree of viscosity to the simulation.
 
 ## Sources/inspiration
+https://youtu.be/iKAVRgIrUOU?si=Oc8n5BHoWxqfJEbp
