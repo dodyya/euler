@@ -1,6 +1,7 @@
 # Eulerian Fluid Simulation
 
 ![Demo of simulation](demo.gif)
+
 An Eulerian fluid simulation written in Rust, loosely following Mattias Muller's tutorial.
 
 ## Controls
