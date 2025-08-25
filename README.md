@@ -6,8 +6,8 @@ An Eulerian fluid simulation written in Rust, loosely following Mattias Muller's
 
 ## Controls
 
-Run using Cargo: `cargo run --release`
-Cycle through visualization modes (various color options; pressure, speed, smoke trails) with the arrow keys. Click/drag to place additional obstacles. Press SPACE to restart the simulation, and press C to clear your placed obstacles.
+- Run using Cargo: `cargo run --release`
+- Cycle through visualization modes (various color options; pressure, speed, smoke trails) with the arrow keys. Click/drag to place additional obstacles. Press SPACE to restart the simulation, and press C to clear your placed obstacles.
 
 ## Technical Implementation
 
