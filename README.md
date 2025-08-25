@@ -16,7 +16,8 @@ The fluid medium is treated as a discretized 2D vector field of velocities. The 
 - fluid incompressibility is enforced by making the divergence (flux out minus flux in) of each cell zero (projection). This has the added effect of allowing the simulation to populate each cell with a pressure value (every time fluid flows in, increase pressure. Every time fluid flows out, decrease it).
 - Gravity is optionally applied, followed by
 - an "advection" step. In this step, the vector field is, essentially, moved along itself. Each vector velocity "looks backwards", sampling the vector velocity at the point V \* dt in its reverse direction. Since this point will rarely fall on the exact center (edge due to MAC coordinates) of another vector, the vectors around it are linearly interpolated to arrive at a final value.
-  While this is more roundabout than the more straightforward solution of going through each vector in the grid, finding where it's going to move to (as opposed to where it has moved from as we are doing here), and copying its value there, the non-naive solution has several advantages:
+
+While this is more roundabout than the more straightforward solution of going through each vector in the grid, finding where it's going to move to (as opposed to where it has moved from as we are doing here), and copying its value there, the non-naive solution has several advantages:
 
 - One write per vector: each cell is accessed once, and is guaranteed to be updated each step. This is not the case in the naive approach, where different cells of fluid flowing into the same one could conflict and overwrite each other. This should technically allow for some degree of parallelization.
 - Update control: by having direct control over which cell velocities are being updated, configurations like wind tunnels, pressure chambers and others where it is useful to be able to keep cell velocities fixed are easier to implement.
