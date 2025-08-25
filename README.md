@@ -2,7 +2,7 @@
 
 <img src="demo.gif" width="500" height="500"/>
 
-An Eulerian fluid simulation written in Rust, loosely following Mattias Muller's tutorial.
+An Eulerian fluid simulation written in Rust, loosely following Matthias Muller's tutorial.
 
 ## Controls
 
